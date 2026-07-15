@@ -139,6 +139,8 @@ tfoot .num{text-align:right;color:var(--teal-dark)}
 .btn-line:hover{background:#05a648}
 .btn-amber{background:var(--amber);color:#fff}
 .btn-amber:hover{background:#cf9012}
+.btn-rail{background:#7b4f0f;color:#fff}
+.btn-rail:hover{background:#5e3c0a}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 
 /* ---------- Customer cards ---------- */
@@ -153,6 +155,19 @@ tfoot .num{text-align:right;color:var(--teal-dark)}
   width:26px;height:26px;border-radius:8px;background:var(--teal);color:#fff;
   display:grid;place-items:center;font-size:13px;
 }
+.head-right{display:flex;align-items:center;gap:10px}
+.type-toggle{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;background:#fff}
+.type-toggle .tg{
+  border:none;background:#fff;color:var(--ink-soft);font-family:'Prompt',sans-serif;font-weight:500;
+  font-size:13px;padding:6px 14px;cursor:pointer;transition:.12s;
+}
+.type-toggle .tg + .tg{border-left:1px solid var(--line-strong)}
+.type-toggle .tg-curtain.on{background:var(--teal);color:#fff}
+.type-toggle .tg-rail.on{background:#7b4f0f;color:#fff}
+/* color-code the whole card header by selected type */
+.cust-card[data-type="ราว"] .cust-head{background:#f3e9d8}
+.cust-card[data-type="ราว"] .cust-head .who{color:#7b4f0f}
+.cust-card[data-type="ราว"] .cust-head .badge{background:#7b4f0f}
 .cust-body{padding:14px}
 .cust-fields{display:grid;grid-template-columns:1fr 160px;gap:12px;margin-bottom:14px}
 .cust-fields .f-date{grid-column:2}
@@ -283,6 +298,16 @@ tfoot .num{text-align:right;color:var(--teal-dark)}
           </div>
         </div>
       </div>
+      <div class="field" style="margin-top:14px;max-width:360px">
+        <label>ประเภทออเดอร์ <span class="sub">แสดงในหัวไฟล์ · เลือกหรือพิมพ์เองได้</span></label>
+        <input id="orderType" list="orderTypeList" placeholder="ออเดอร์ผ้าม่าน" value="ออเดอร์ผ้าม่าน">
+        <datalist id="orderTypeList">
+          <option value="ออเดอร์ผ้าม่าน">
+          <option value="ออเดอร์ราว">
+          <option value="ออเดอร์ผ้าม่าน + ราว">
+          <option value="ออเดอร์เคลม">
+        </datalist>
+      </div>
     </div>
   </div>
 
@@ -290,12 +315,13 @@ tfoot .num{text-align:right;color:var(--teal-dark)}
   <div class="panel">
     <div class="panel-head">
       <h2>รายการออเดอร์</h2>
-      <span class="hint">1 การ์ด = ลูกค้า 1 คน · เพิ่มรายการสินค้าได้หลายผืน</span>
+      <span class="hint">1 การ์ด = ลูกค้า 1 คน · เลือกผ้าม่าน/ราวได้ · ตอน export แยกคนละหน้า</span>
     </div>
     <div class="panel-body">
       <div id="custList"></div>
       <div class="table-actions">
-        <button class="btn btn-primary" onclick="addCustomer()">＋ เพิ่มลูกค้า</button>
+        <button class="btn btn-primary" onclick="addCustomer({type:'ผ้าม่าน'})">＋ เพิ่มลูกค้า (ผ้าม่าน)</button>
+        <button class="btn btn-rail" onclick="addCustomer({type:'ราว'})">＋ เพิ่มลูกค้า (ราว)</button>
         <button class="btn btn-ghost" onclick="clearForm()">ล้างฟอร์ม</button>
       </div>
       <div class="grand-total">
@@ -464,11 +490,19 @@ function addCustomer(data={}){
   custSeq++;
   const wrap=document.createElement('div');
   wrap.className='cust-card';
+  const type=data.type||'ผ้าม่าน';
+  wrap.dataset.type=type;
   const items=(data.items&&data.items.length)?data.items:[{}];
   wrap.innerHTML=`
     <div class="cust-head">
       <div class="who"><span class="badge cust-badge"></span>ลูกค้า</div>
-      <button class="btn-remove-cust" onclick="delCustomer(this)">ลบลูกค้า</button>
+      <div class="head-right">
+        <div class="type-toggle" role="tablist">
+          <button type="button" class="tg tg-curtain ${type==='ผ้าม่าน'?'on':''}" onclick="setCardType(this,'ผ้าม่าน')">ผ้าม่าน</button>
+          <button type="button" class="tg tg-rail ${type==='ราว'?'on':''}" onclick="setCardType(this,'ราว')">ราว</button>
+        </div>
+        <button class="btn-remove-cust" onclick="delCustomer(this)">ลบ</button>
+      </div>
     </div>
     <div class="cust-body">
       <div class="cust-fields">
@@ -514,6 +548,12 @@ function delCustomer(btn){
   btn.closest('.cust-card').remove();
   renumberCust();recalc();
 }
+function setCardType(btn,type){
+  const card=btn.closest('.cust-card');
+  card.dataset.type=type;
+  card.querySelectorAll('.type-toggle .tg').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
 function renumberCust(){
   [...$('custList').children].forEach((c,i)=>c.querySelector('.cust-badge').textContent=i+1);
 }
@@ -537,6 +577,7 @@ function recalc(){
 /* ---- Collect form data ---- */
 function collect(){
   const customers=[...$('custList').children].map(card=>({
+    type:card.dataset.type||'ผ้าม่าน',
     date:card.querySelector('.c-date').value,
     cust:card.querySelector('.c-cust').value.trim(),
     paid:card.querySelector('.c-paid').value.trim(),
@@ -551,6 +592,7 @@ function collect(){
   return {
     sellerCode:$('sellerCode').value.trim(),
     sellerName:$('sellerName').value.trim(),
+    orderType:$('orderType').value.trim(),
     shipDate:$('shipDate').value,
     shipSuffix:$('shipSuffix').value.trim(),
     customers,
@@ -559,22 +601,35 @@ function collect(){
 }
 function escapeAttr(s){return(s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-/* ---- Header title text ---- */
-function headerTitle(o){
+/* ---- Header title text ----
+   typeOverride: when exporting a specific page (ผ้าม่าน/ราว), pass the
+   group's type so the heading reflects that page. Falls back to o.orderType. */
+function headerTitle(o, typeOverride){
   const parts=[];
   if(o.sellerCode)parts.push(o.sellerCode);
   if(o.sellerName)parts.push(o.sellerName);
-  let s=parts.join(' ');
+  const typeLabel=(typeOverride!=null?typeOverride:(o.orderType||'ออเดอร์ผ้าม่าน')).trim();
+  if(typeLabel)parts.push(typeLabel);
   const ship=[thDate(o.shipDate),o.shipSuffix].filter(Boolean).join(' ');
-  if(ship)s+=`  ขอจัดส่งวันที่ ${ship}`;
-  return s.trim()||'ออเดอร์ผ้าม่าน';
+  if(ship)parts.push(ship);
+  return parts.join(' ').trim()||'ออเดอร์ผ้าม่าน';
+}
+// map a raw card type to the words used in the page heading, honoring o.orderType
+function pageTypeLabel(o, cardType){
+  const ot=(o.orderType||'').trim();
+  // If user typed a custom order type and there's only one group, use it as-is.
+  if(cardType==='ราว') return ot && ot.includes('ราว') && !ot.includes('ผ้าม่าน') ? ot : 'ออเดอร์ราว';
+  // curtain group
+  if(ot && !/ราว/.test(ot)) return ot;      // e.g. "ออเดอร์เคลม", "ออเดอร์ผ้าม่าน"
+  return 'ออเดอร์ผ้าม่าน';
 }
 
 /* ---- Clear ---- */
 function clearForm(){
   $('sellerCode').value='';$('sellerName').value='';
   $('shipDate').value='';$('shipSuffix').value='';
-  $('custList').innerHTML='';custSeq=0;addCustomer();
+  $('orderType').value='ออเดอร์ผ้าม่าน';
+  $('custList').innerHTML='';custSeq=0;addCustomer({type:'ผ้าม่าน'});
 }
 
 /* ---- Save ---- */
@@ -589,16 +644,14 @@ async function saveOrder(){
   }catch(e){console.error(e);toast('บันทึกไม่สำเร็จ','err');}
 }
 
-/* ---- Render printable HTML then rasterize to PDF (keeps Thai text) ----
-   Word-style: white bg, black hairline borders. Customer name/date/paid
-   are merged (rowspan) across that customer's item rows.                   */
-function renderPrintable(o){
+/* ---- Render one printable page (one order type) ---- */
+function renderPage(o, customers, typeLabel){
   const nl=s=>escapeHtml(s).replace(/\n/g,'<br>');
   const bd='border:1px solid #000;padding:6px 8px;vertical-align:top;word-break:break-word;overflow-wrap:break-word';
   const bdc=bd+';text-align:center';
   let grand=0;
 
-  const body=(o.customers||[]).map(c=>{
+  const body=(customers||[]).map(c=>{
     const items=c.items&&c.items.length?c.items:[{}];
     return items.map((it,idx)=>{
       grand+=sumLines(it.price);
@@ -624,7 +677,7 @@ function renderPrintable(o){
 
   return `
   <div style="font-family:'Sarabun',sans-serif;color:#000;background:#fff;padding:28px;width:748px">
-    <div style="font-size:16px;font-weight:700;margin-bottom:14px">${escapeHtml(headerTitle(o))}</div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:14px">${escapeHtml(headerTitle(o, typeLabel))}</div>
     <table style="border-collapse:collapse;width:100%;font-size:12.5px;background:#fff;table-layout:fixed">
       <colgroup>
         <col style="width:78px">
@@ -659,28 +712,53 @@ function renderPrintable(o){
     </table>
   </div>`;
 }
+
+/* ---- Group customers by type; return one page (HTML) per non-empty group.
+   Order: ผ้าม่าน first, then ราว, then any other custom types.            */
+function renderPages(o){
+  const cs=o.customers||[];
+  const order=['ผ้าม่าน','ราว'];
+  const types=[...new Set(cs.map(c=>c.type||'ผ้าม่าน'))]
+    .sort((a,b)=>{
+      const ia=order.indexOf(a), ib=order.indexOf(b);
+      return (ia<0?99:ia)-(ib<0?99:ib);
+    });
+  const pages=[];
+  types.forEach(t=>{
+    const group=cs.filter(c=>(c.type||'ผ้าม่าน')===t);
+    if(!group.length)return;
+    pages.push(renderPage(o, group, pageTypeLabel(o, t)));
+  });
+  if(!pages.length) pages.push(renderPage(o, cs, o.orderType||'ออเดอร์ผ้าม่าน'));
+  return pages;
+}
 function escapeHtml(s){return(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 
-/* ---- Export PDF (uses html2canvas to preserve Thai) ---- */
+/* ---- Export PDF (uses html2canvas to preserve Thai) ----
+   Each order type (ผ้าม่าน / ราว) goes on its own page in one PDF file.    */
 async function exportPDF(o){
   o=o||collect();
   const hasData=(o.customers||[]).some(c=>c.cust||c.items.some(it=>it.qty||it.price||it.size));
   if(!hasData){toast('ยังไม่มีข้อมูลให้ export','err');return;}
   toast('กำลังสร้าง PDF…');
+  const pages=renderPages(o);
   const area=$('pdfArea');
-  area.innerHTML=renderPrintable(o);
-  await new Promise(r=>setTimeout(r,120));
   try{
-    const canvas=await html2canvas(area.firstElementChild,{scale:2,backgroundColor:'#fff'});
-    const img=canvas.toDataURL('image/png');
     const{jsPDF}=window.jspdf;
     const pdf=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
     const pw=pdf.internal.pageSize.getWidth()-40;
-    const ph=canvas.height*pw/canvas.width;
-    pdf.addImage(img,'PNG',20,20,pw,ph);
+    for(let i=0;i<pages.length;i++){
+      area.innerHTML=pages[i];
+      await new Promise(r=>setTimeout(r,120));
+      const canvas=await html2canvas(area.firstElementChild,{scale:2,backgroundColor:'#fff'});
+      const img=canvas.toDataURL('image/png');
+      const ph=canvas.height*pw/canvas.width;
+      if(i>0) pdf.addPage();
+      pdf.addImage(img,'PNG',20,20,pw,ph);
+    }
     const fname=fileName(o);
     pdf.save(fname);
-    toast('บันทึก PDF แล้ว','ok');
+    toast(pages.length>1?`บันทึก PDF ${pages.length} หน้าแล้ว`:'บันทึก PDF แล้ว','ok');
     return {pdf,fname,blob:pdf.output('blob')};
   }catch(e){console.error(e);toast('สร้าง PDF ไม่สำเร็จ','err');}
 }
@@ -735,8 +813,13 @@ async function loadSaved(){
 }
 // convert legacy row-based order -> customer-based
 function normalizeOrder(o){
-  if(o.customers)return o;
+  if(o.customers){
+    // ensure every customer has a type
+    o.customers=o.customers.map(c=>({...c,type:c.type||'ผ้าม่าน'}));
+    return o;
+  }
   const customers=(o.rows||[]).map(r=>({
+    type:'ผ้าม่าน',
     date:r.date,cust:r.cust,paid:r.paid,
     items:[{qty:r.qty,color:r.color,size:r.size,note:r.note,price:r.price}]
   }));
@@ -746,11 +829,12 @@ function reopen(js){
   const o=normalizeOrder(JSON.parse(js));
   $('sellerCode').value=o.sellerCode||'';
   $('sellerName').value=o.sellerName||'';
+  $('orderType').value=o.orderType||'ออเดอร์ผ้าม่าน';
   $('shipDate').value=o.shipDate||'';
   $('shipSuffix').value=o.shipSuffix||'';
   $('custList').innerHTML='';custSeq=0;
   (o.customers||[]).forEach(c=>addCustomer(c));
-  if(!(o.customers||[]).length)addCustomer();
+  if(!(o.customers||[]).length)addCustomer({type:'ผ้าม่าน'});
   window.scrollTo({top:0,behavior:'smooth'});
   toast('เปิดออเดอร์แล้ว','ok');
 }
@@ -766,7 +850,7 @@ function closeCfg(){$('cfgModal').classList.remove('show');}
 let _booted=false;
 function boot(){
   if(_booted)return; _booted=true;
-  addCustomer();
+  addCustomer({type:'ผ้าม่าน'});
   loadSaved();
 }
 window.addEventListener('storeReady',boot);
@@ -790,7 +874,7 @@ setTimeout(()=>{
 },2500);
 
 // expose
-window.addCustomer=addCustomer;window.delCustomer=delCustomer;
+window.addCustomer=addCustomer;window.delCustomer=delCustomer;window.setCardType=setCardType;
 window.addItem=addItem;window.delItem=delItem;window.recalc=recalc;
 window.saveOrder=saveOrder;window.exportPDF=exportPDF;window.shareLine=shareLine;
 window.clearForm=clearForm;window.reopen=reopen;window.pdfSaved=pdfSaved;
