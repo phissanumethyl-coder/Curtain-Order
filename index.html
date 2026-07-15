@@ -248,8 +248,8 @@ tfoot .num{text-align:right;color:var(--teal-dark)}
               <th>จำนวน<br>(ผืน)</th>
               <th>สี</th>
               <th>ขนาด</th>
-              <th>หมายเหตุ<br>(เซ็นรับ)</th>
-              <th>ราคา</th>
+              <th>หมายเหตุ</th>
+              <th>ต้นทุน</th>
               <th>ชำระ</th>
               <th></th>
             </tr>
@@ -261,7 +261,7 @@ tfoot .num{text-align:right;color:var(--teal-dark)}
               <td class="num" id="sumQty">0</td>
               <td colspan="3"></td>
               <td class="num" id="sumPrice">0.00</td>
-              <td class="num" id="sumPaid">0.00</td>
+              <td></td>
               <td></td>
             </tr>
           </tfoot>
@@ -417,12 +417,12 @@ function addRow(data={}){
     <td class="rownum">${tb.children.length+1}</td>
     <td><input type="date" class="c-date" value="${data.date||todayISO()}"></td>
     <td><textarea class="c-cust" rows="2" placeholder="ชื่อ / ที่อยู่ / เบอร์">${data.cust||''}</textarea></td>
-    <td class="num"><input type="number" class="c-qty" min="0" step="1" value="${data.qty||''}" oninput="recalc()"></td>
-    <td><input class="c-color" value="${data.color||''}" placeholder="สี"></td>
-    <td><input class="c-size" value="${data.size||''}" placeholder="ขนาด"></td>
-    <td><input class="c-note" value="${data.note||''}" placeholder="เซ็นรับ / หมายเหตุ"></td>
-    <td class="num"><input type="number" class="c-price" min="0" step="0.01" value="${data.price||''}" oninput="recalc()"></td>
-    <td class="num"><input type="number" class="c-paid" min="0" step="0.01" value="${data.paid||''}" oninput="recalc()"></td>
+    <td class="num"><textarea class="c-qty" rows="1" placeholder="จำนวน" oninput="recalc()">${data.qty||''}</textarea></td>
+    <td><textarea class="c-color" rows="1" placeholder="สี">${data.color||''}</textarea></td>
+    <td><textarea class="c-size" rows="1" placeholder="ขนาด">${data.size||''}</textarea></td>
+    <td><textarea class="c-note" rows="1" placeholder="หมายเหตุ">${data.note||''}</textarea></td>
+    <td class="num"><textarea class="c-price" rows="1" placeholder="ต้นทุน" oninput="recalc()">${data.price||''}</textarea></td>
+    <td><textarea class="c-paid" rows="1" placeholder="เช่น COD 1500 / Shopee 1500">${data.paid||''}</textarea></td>
     <td class="col-del"><button class="btn-del" onclick="delRow(this)" title="ลบแถว">×</button></td>`;
   tb.appendChild(tr);
   recalc();
@@ -439,17 +439,23 @@ function renumber(){
   [...$('orderBody').children].forEach((tr,i)=>tr.querySelector('.rownum').textContent=i+1);
 }
 
-/* ---- Recalculate totals ---- */
+/* ---- Sum every number found in a multi-line text field ---- */
+function sumLines(text){
+  return (text||'').split('\n').reduce((a,line)=>{
+    const n=parseFloat(String(line).replace(/,/g,''));
+    return a+(isNaN(n)?0:n);
+  },0);
+}
+
+/* ---- Recalculate totals (qty + cost only; paid is a note, not summed) ---- */
 function recalc(){
-  let q=0,p=0,pd=0;
+  let q=0,p=0;
   [...$('orderBody').children].forEach(tr=>{
-    q+=parseFloat(tr.querySelector('.c-qty').value)||0;
-    p+=parseFloat(tr.querySelector('.c-price').value)||0;
-    pd+=parseFloat(tr.querySelector('.c-paid').value)||0;
+    q+=sumLines(tr.querySelector('.c-qty').value);
+    p+=sumLines(tr.querySelector('.c-price').value);
   });
-  $('sumQty').textContent=q;
-  $('sumPrice').textContent=p.toFixed(2);
-  $('sumPaid').textContent=pd.toFixed(2);
+  $('sumQty').textContent=Number.isInteger(q)?q:q.toFixed(2);
+  $('sumPrice').textContent=p.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 
 /* ---- Collect form data ---- */
@@ -511,49 +517,49 @@ function buildPDF(o){
   return pdf;
 }
 
-/* ---- Render printable HTML then rasterize to PDF (keeps Thai text) ---- */
+/* ---- Render printable HTML then rasterize to PDF (keeps Thai text) ----
+   Word-style: white background, black hairline borders, no # column       */
 function renderPrintable(o){
-  const rowsHtml=o.rows.map((r,i)=>`
+  const nl=s=>escapeHtml(s).replace(/\n/g,'<br>');
+  const bd='border:1px solid #000;padding:6px 8px;vertical-align:top';
+  const rowsHtml=o.rows.map(r=>`
     <tr>
-      <td style="text-align:center">${i+1}</td>
-      <td>${thDate(r.date)}</td>
-      <td style="text-align:left">${escapeHtml(r.cust).replace(/\n/g,'<br>')}</td>
-      <td style="text-align:center">${r.qty||''}</td>
-      <td style="text-align:center">${escapeHtml(r.color)}</td>
-      <td style="text-align:center">${escapeHtml(r.size)}</td>
-      <td>${escapeHtml(r.note)}</td>
-      <td style="text-align:right">${r.price?(+r.price).toLocaleString('th-TH',{minimumFractionDigits:2}):''}</td>
-      <td style="text-align:right">${r.paid?(+r.paid).toLocaleString('th-TH',{minimumFractionDigits:2}):''}</td>
+      <td style="${bd};text-align:center;white-space:nowrap">${thDate(r.date)}</td>
+      <td style="${bd};text-align:left">${nl(r.cust)}</td>
+      <td style="${bd};text-align:center">${nl(r.qty)}</td>
+      <td style="${bd};text-align:center">${nl(r.color)}</td>
+      <td style="${bd};text-align:center">${nl(r.size)}</td>
+      <td style="${bd};text-align:center">${nl(r.note)}</td>
+      <td style="${bd};text-align:right">${nl(r.price)}</td>
+      <td style="${bd};text-align:center">${nl(r.paid)}</td>
     </tr>`).join('');
-  const sumQty=o.rows.reduce((a,r)=>a+(+r.qty||0),0);
-  const sumP=o.rows.reduce((a,r)=>a+(+r.price||0),0);
-  const sumPd=o.rows.reduce((a,r)=>a+(+r.paid||0),0);
+
+  // total cost = sum of every number across all cost cells (supports multi-line)
+  const sumP=o.rows.reduce((a,r)=>a+sumLines(r.price),0);
+  const th='border:1px solid #000;padding:7px 8px;font-weight:700;text-align:center';
 
   return `
-  <div style="font-family:'Sarabun',sans-serif;color:#111;padding:24px;width:752px">
-    <div style="font-size:16px;font-weight:700;margin-bottom:12px">${escapeHtml(headerTitle(o))}</div>
-    <table style="border-collapse:collapse;width:100%;font-size:12.5px">
+  <div style="font-family:'Sarabun',sans-serif;color:#000;background:#fff;padding:28px;width:748px">
+    <div style="font-size:16px;font-weight:700;margin-bottom:14px">${escapeHtml(headerTitle(o))}</div>
+    <table style="border-collapse:collapse;width:100%;font-size:12.5px;background:#fff">
       <thead>
-        <tr style="background:#0f7b7b;color:#fff">
-          <th style="border:1px solid #333;padding:6px 4px;width:26px">#</th>
-          <th style="border:1px solid #333;padding:6px 4px">วันที่ออเดอร์</th>
-          <th style="border:1px solid #333;padding:6px 4px">ชื่อ–ที่อยู่</th>
-          <th style="border:1px solid #333;padding:6px 4px">จำนวน</th>
-          <th style="border:1px solid #333;padding:6px 4px">สี</th>
-          <th style="border:1px solid #333;padding:6px 4px">ขนาด</th>
-          <th style="border:1px solid #333;padding:6px 4px">เซ็นรับ</th>
-          <th style="border:1px solid #333;padding:6px 4px">ราคา</th>
-          <th style="border:1px solid #333;padding:6px 4px">ชำระ</th>
+        <tr style="background:#fff">
+          <th style="${th}">วันที่ออเดอร์</th>
+          <th style="${th}">ชื่อ–ที่อยู่</th>
+          <th style="${th}">จำนวน</th>
+          <th style="${th}">สี</th>
+          <th style="${th}">ขนาด</th>
+          <th style="${th}">หมายเหตุ</th>
+          <th style="${th}">ต้นทุน</th>
+          <th style="${th}">ชำระ</th>
         </tr>
       </thead>
       <tbody>${rowsHtml}</tbody>
       <tfoot>
-        <tr style="background:#f0f5f8;font-weight:700">
-          <td colspan="3" style="border:1px solid #333;padding:6px 4px;text-align:center">รวม</td>
-          <td style="border:1px solid #333;padding:6px 4px;text-align:center">${sumQty}</td>
-          <td colspan="3" style="border:1px solid #333"></td>
-          <td style="border:1px solid #333;padding:6px 4px;text-align:right">${sumP.toLocaleString('th-TH',{minimumFractionDigits:2})}</td>
-          <td style="border:1px solid #333;padding:6px 4px;text-align:right">${sumPd.toLocaleString('th-TH',{minimumFractionDigits:2})}</td>
+        <tr style="font-weight:700;background:#fff">
+          <td colspan="6" style="${bd};text-align:center;font-weight:700">รวม</td>
+          <td style="${bd};text-align:right;font-weight:700">${sumP.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+          <td style="${bd}"></td>
         </tr>
       </tfoot>
     </table>
@@ -586,7 +592,9 @@ async function exportPDF(o){
 function fileName(o){
   const base=[o.sellerCode,o.sellerName].filter(Boolean).join('_')||'order';
   const d=thDate(o.shipDate)||new Date().toLocaleDateString('th-TH');
-  return `${base}_${d}.pdf`.replace(/[\/\\:\s]+/g,'-');
+  const suffix=(o.shipSuffix||'').trim();
+  const tail=[d,suffix].filter(Boolean).join('_');
+  return `${base}_${tail}.pdf`.replace(/[\/\\:*?"<>|]+/g,'-').replace(/\s+/g,'-');
 }
 
 /* ---- Share to LINE ---- */
