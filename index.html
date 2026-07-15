@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบเปิดออเดอร์ผ้าม่าน</title>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=Prompt:wght@500;600;700&display=swap" rel="stylesheet">
+
+<!-- Libraries: jsPDF + autotable + html2canvas -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<style>
+:root{
+  --ink:#1a2b3c;
+  --ink-soft:#4a5d70;
+  --line:#d9e2ec;
+  --line-strong:#b7c4d1;
+  --bg:#eef2f6;
+  --panel:#ffffff;
+  --teal:#0f7b7b;
+  --teal-dark:#0a5c5c;
+  --teal-soft:#e2f2f1;
+  --amber:#e8a317;
+  --danger:#c0392b;
+  --danger-soft:#fbe9e7;
+  --ok:#1f8a4c;
+  --radius:10px;
+  --shadow:0 1px 3px rgba(26,43,60,.08), 0 4px 16px rgba(26,43,60,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Sarabun',sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  line-height:1.5;
+  padding:0 0 80px;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.brand{font-family:'Prompt',sans-serif}
+
+/* ---------- Top bar ---------- */
+.topbar{
+  background:var(--teal);
+  color:#fff;
+  padding:14px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;flex-wrap:wrap;
+  position:sticky;top:0;z-index:50;
+  box-shadow:0 2px 12px rgba(10,92,92,.25);
+}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}
+.brand .logo{
+  width:34px;height:34px;border-radius:9px;background:#fff;
+  display:grid;place-items:center;color:var(--teal);font-size:20px;
+}
+.sync-state{font-size:13px;display:flex;align-items:center;gap:7px;opacity:.95}
+.dot{width:9px;height:9px;border-radius:50%;background:#ffd466;box-shadow:0 0 0 3px rgba(255,212,102,.25)}
+.dot.on{background:#7ee6a0;box-shadow:0 0 0 3px rgba(126,230,160,.3)}
+.dot.off{background:#ff9a8b;box-shadow:0 0 0 3px rgba(255,154,139,.25)}
+
+/* ---------- Layout ---------- */
+.wrap{max-width:1080px;margin:20px auto;padding:0 16px}
+.panel{background:var(--panel);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--line);overflow:hidden}
+.panel + .panel{margin-top:18px}
+.panel-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.panel-head h2{font-size:16px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:8px}
+.panel-head .hint{font-size:12.5px;color:var(--ink-soft)}
+.panel-body{padding:18px}
+
+/* ---------- Header fields ---------- */
+.grid{display:grid;gap:14px}
+.grid.cols-3{grid-template-columns:repeat(3,1fr)}
+.grid.cols-2{grid-template-columns:repeat(2,1fr)}
+.field label{display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:5px}
+.field .sub{font-weight:400;color:#8a99a8;font-size:12px}
+input,textarea,select{
+  width:100%;font-family:inherit;font-size:14.5px;color:var(--ink);
+  padding:9px 11px;border:1px solid var(--line-strong);border-radius:8px;background:#fff;
+  transition:border-color .15s, box-shadow .15s;
+}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-soft)}
+textarea{resize:vertical;min-height:44px}
+.date-row{display:flex;gap:10px}
+.date-row input[type=date]{flex:1}
+.date-row input.suffix{flex:1}
+.chips{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
+.chip{
+  font-size:12.5px;padding:4px 11px;border:1px solid var(--line-strong);border-radius:20px;
+  background:#fff;color:var(--ink-soft);cursor:pointer;transition:all .12s;
+}
+.chip:hover{border-color:var(--teal);color:var(--teal);background:var(--teal-soft)}
+
+/* ---------- Table ---------- */
+.table-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table.order{border-collapse:collapse;width:100%;min-width:860px;font-size:14px}
+table.order th{
+  background:var(--teal);color:#fff;font-family:'Prompt',sans-serif;font-weight:500;
+  font-size:13px;padding:10px 8px;text-align:center;white-space:nowrap;
+}
+table.order th:first-child{border-top-left-radius:0}
+table.order td{border:1px solid var(--line);padding:4px;vertical-align:top}
+table.order td.rownum{background:#f5f8fa;text-align:center;font-weight:600;color:var(--ink-soft);font-size:13px;width:34px}
+table.order tr:nth-child(even) td{background:#fbfcfd}
+table.order tr:nth-child(even) td.rownum{background:#eef3f7}
+table.order input,table.order textarea{border:1px solid transparent;background:transparent;padding:6px 7px;font-size:13.5px;border-radius:6px}
+table.order input:focus,table.order textarea:focus{background:#fff;border-color:var(--teal)}
+table.order td.num input{text-align:right}
+.col-del{width:38px}
+.btn-del{
+  width:28px;height:28px;border:none;border-radius:7px;background:var(--danger-soft);color:var(--danger);
+  cursor:pointer;font-size:16px;display:grid;place-items:center;margin:2px auto;transition:.12s;
+}
+.btn-del:hover{background:var(--danger);color:#fff}
+tfoot td{background:#f0f5f8;font-weight:700;padding:10px 8px}
+tfoot .label{text-align:right;color:var(--ink)}
+tfoot .num{text-align:right;color:var(--teal-dark)}
+
+.table-actions{margin-top:12px;display:flex;gap:10px;flex-wrap:wrap}
+
+/* ---------- Buttons ---------- */
+.btn{
+  font-family:'Prompt',sans-serif;font-weight:500;font-size:14px;
+  padding:10px 18px;border-radius:9px;border:1px solid transparent;cursor:pointer;
+  display:inline-flex;align-items:center;gap:8px;transition:.15s;white-space:nowrap;
+}
+.btn-primary{background:var(--teal);color:#fff}
+.btn-primary:hover{background:var(--teal-dark)}
+.btn-ghost{background:#fff;color:var(--teal);border-color:var(--line-strong)}
+.btn-ghost:hover{border-color:var(--teal);background:var(--teal-soft)}
+.btn-add{background:var(--teal-soft);color:var(--teal-dark);border-color:transparent}
+.btn-add:hover{background:#cfeae8}
+.btn-line{background:#06C755;color:#fff}
+.btn-line:hover{background:#05a648}
+.btn-amber{background:var(--amber);color:#fff}
+.btn-amber:hover{background:#cf9012}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ---------- Action bar ---------- */
+.actionbar{
+  position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);
+  padding:12px 16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;z-index:40;
+  box-shadow:0 -2px 14px rgba(26,43,60,.07);
+}
+
+/* ---------- Saved orders ---------- */
+.saved-list{display:flex;flex-direction:column;gap:8px}
+.saved-item{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:11px 14px;border:1px solid var(--line);border-radius:9px;background:#fff;flex-wrap:wrap;
+}
+.saved-item:hover{border-color:var(--teal);background:var(--teal-soft)}
+.saved-meta{font-size:13px;color:var(--ink-soft)}
+.saved-meta strong{color:var(--ink);font-family:'Prompt',sans-serif;font-weight:600}
+.saved-actions{display:flex;gap:6px}
+.mini{padding:6px 12px;font-size:13px;border-radius:7px}
+.empty{text-align:center;color:#8a99a8;padding:26px;font-size:14px}
+
+/* ---------- Toast ---------- */
+.toast{
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--ink);color:#fff;padding:11px 20px;border-radius:24px;font-size:14px;
+  opacity:0;pointer-events:none;transition:.25s;z-index:100;box-shadow:0 6px 24px rgba(0,0,0,.25);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{background:var(--ok)}
+.toast.err{background:var(--danger)}
+
+/* ---------- Modal ---------- */
+.modal-bg{position:fixed;inset:0;background:rgba(26,43,60,.5);display:none;place-items:center;z-index:90;padding:16px}
+.modal-bg.show{display:grid}
+.modal{background:#fff;border-radius:14px;max-width:420px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal h3{font-size:17px;margin-bottom:8px}
+.modal p{font-size:14px;color:var(--ink-soft);margin-bottom:14px}
+.modal .modal-actions{display:flex;gap:10px;justify-content:flex-end}
+.modal code{background:var(--bg);padding:2px 6px;border-radius:5px;font-size:13px}
+
+/* ---------- Responsive ---------- */
+@media(max-width:720px){
+  .grid.cols-3,.grid.cols-2{grid-template-columns:1fr}
+  .brand{font-size:16px}
+  .actionbar .btn{flex:1;justify-content:center;padding:11px 10px;font-size:13px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="logo">▤</span> ระบบเปิดออเดอร์ผ้าม่าน</div>
+  <div class="sync-state"><span class="dot" id="syncDot"></span><span id="syncText">กำลังเชื่อมต่อ…</span></div>
+</div>
+
+<div class="wrap">
+
+  <!-- ===== Header info ===== -->
+  <div class="panel">
+    <div class="panel-head">
+      <h2>ข้อมูลหัวบิล</h2>
+      <span class="hint">กรอกรหัสเซล ชื่อเซล และวันที่จัดส่ง</span>
+    </div>
+    <div class="panel-body">
+      <div class="grid cols-3">
+        <div class="field">
+          <label>รหัสเซล</label>
+          <input id="sellerCode" placeholder="เช่น SALE_1">
+        </div>
+        <div class="field">
+          <label>ชื่อเซล</label>
+          <input id="sellerName" placeholder="เช่น น้องแนน">
+        </div>
+        <div class="field">
+          <label>วันที่จัดส่ง <span class="sub">+ ข้อความต่อท้าย</span></label>
+          <div class="date-row">
+            <input type="date" id="shipDate">
+            <input class="suffix" id="shipSuffix" placeholder="บ่าย / Lazada">
+          </div>
+          <div class="chips" id="suffixChips">
+            <span class="chip" data-v="เช้า">เช้า</span>
+            <span class="chip" data-v="บ่าย">บ่าย</span>
+            <span class="chip" data-v="Shopee">Shopee</span>
+            <span class="chip" data-v="Lazada">Lazada</span>
+            <span class="chip" data-v="TikTok">TikTok</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Order table ===== -->
+  <div class="panel">
+    <div class="panel-head">
+      <h2>รายการออเดอร์</h2>
+      <span class="hint">กด “เพิ่มแถว” เพื่อเพิ่มรายการ</span>
+    </div>
+    <div class="panel-body">
+      <div class="table-scroll">
+        <table class="order">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>วันที่<br>เปิดออเดอร์</th>
+              <th>ชื่อ–ที่อยู่ลูกค้า</th>
+              <th>จำนวน<br>(ผืน)</th>
+              <th>สี</th>
+              <th>ขนาด</th>
+              <th>หมายเหตุ<br>(เซ็นรับ)</th>
+              <th>ราคา</th>
+              <th>ชำระ</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="orderBody"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" class="label">รวม</td>
+              <td class="num" id="sumQty">0</td>
+              <td colspan="3"></td>
+              <td class="num" id="sumPrice">0.00</td>
+              <td class="num" id="sumPaid">0.00</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="table-actions">
+        <button class="btn btn-add" onclick="addRow()">＋ เพิ่มแถว</button>
+        <button class="btn btn-ghost" onclick="clearForm()">ล้างฟอร์ม</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Saved orders ===== -->
+  <div class="panel">
+    <div class="panel-head">
+      <h2>ออเดอร์ที่บันทึกไว้</h2>
+      <span class="hint" id="savedCount"></span>
+    </div>
+    <div class="panel-body">
+      <div class="saved-list" id="savedList"><div class="empty">ยังไม่มีออเดอร์ที่บันทึก</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== Fixed action bar ===== -->
+<div class="actionbar">
+  <button class="btn btn-primary" onclick="saveOrder()">💾 บันทึกออเดอร์</button>
+  <button class="btn btn-amber" onclick="exportPDF()">📄 Export PDF</button>
+  <button class="btn btn-line" onclick="shareLine()">แชร์เข้า LINE</button>
+</div>
+
+<!-- Hidden print area used to render PDF -->
+<div id="pdfArea" style="position:fixed;left:-9999px;top:0;width:800px;background:#fff;"></div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Config modal -->
+<div class="modal-bg" id="cfgModal">
+  <div class="modal">
+    <h3>⚙️ ยังไม่ได้ตั้งค่า Firebase</h3>
+    <p>แอปทำงานได้ปกติ (บันทึกในเครื่อง) แต่ถ้าต้องการซิงก์ข้อมูลข้ามเครื่อง ให้ใส่ค่า <code>firebaseConfig</code> ในไฟล์ <code>index.html</code> ตรงส่วน <code>FIREBASE CONFIG</code></p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeCfg()">เข้าใจแล้ว</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Firebase ============ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* ================= FIREBASE CONFIG =================
+   แทนที่ค่าด้านล่างด้วยของโปรเจกต์คุณ (Console > Project settings)
+   ถ้ายังไม่ใส่ แอปจะบันทึกลงเครื่อง (localStorage) แทน            */
+const firebaseConfig = {
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
+};
+/* =================================================== */
+
+let db=null, useFirebase=false;
+const dot=document.getElementById('syncDot'), txt=document.getElementById('syncText');
+
+if(firebaseConfig.projectId){
+  try{
+    const app=initializeApp(firebaseConfig);
+    db=getFirestore(app);
+    useFirebase=true;
+    dot.classList.add('on'); txt.textContent='ซิงก์ Firebase';
+  }catch(e){
+    useFirebase=false; dot.classList.add('off'); txt.textContent='บันทึกในเครื่อง';
+  }
+}else{
+  dot.classList.add('off'); txt.textContent='บันทึกในเครื่อง (local)';
+}
+
+const LS_KEY='curtain_orders';
+
+// expose store API to non-module scripts
+window.OrderStore = {
+  useFirebase: ()=>useFirebase,
+  async save(order){
+    if(useFirebase){
+      await addDoc(collection(db,'orders'),{...order, createdAt:serverTimestamp()});
+    }else{
+      const list=JSON.parse(localStorage.getItem(LS_KEY)||'[]');
+      list.unshift({...order, id:'local_'+Date.now()});
+      localStorage.setItem(LS_KEY,JSON.stringify(list));
+    }
+  },
+  async list(){
+    if(useFirebase){
+      const q=query(collection(db,'orders'),orderBy('createdAt','desc'));
+      const snap=await getDocs(q);
+      return snap.docs.map(d=>({id:d.id,...d.data()}));
+    }else{
+      return JSON.parse(localStorage.getItem(LS_KEY)||'[]');
+    }
+  },
+  async remove(id){
+    if(useFirebase){ await deleteDoc(doc(db,'orders',id)); }
+    else{
+      let list=JSON.parse(localStorage.getItem(LS_KEY)||'[]');
+      list=list.filter(o=>o.id!==id);
+      localStorage.setItem(LS_KEY,JSON.stringify(list));
+    }
+  }
+};
+window.dispatchEvent(new Event('storeReady'));
+</script>
+
+<!-- ============ App logic ============ -->
+<script>
+const $=id=>document.getElementById(id);
+let rowCount=0;
+
+/* ---- Toast ---- */
+let toastTimer;
+function toast(msg,type=''){
+  const t=$('toast');t.textContent=msg;t.className='toast show '+type;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.className='toast',2200);
+}
+
+/* ---- Suffix chips ---- */
+$('suffixChips').addEventListener('click',e=>{
+  const c=e.target.closest('.chip');if(!c)return;
+  const cur=$('shipSuffix').value.trim();
+  const v=c.dataset.v;
+  $('shipSuffix').value = cur ? (cur+' '+v) : v;
+});
+
+/* ---- Today's date default for new rows ---- */
+function todayISO(){return new Date().toISOString().slice(0,10);}
+function thDate(iso){
+  if(!iso)return'';
+  const[y,m,d]=iso.split('-');
+  return `${+d}/${+m}/${(+y)+543}`; // convert to Buddhist year like sample (2569)
+}
+
+/* ---- Add a row ---- */
+function addRow(data={}){
+  rowCount++;
+  const tb=$('orderBody');
+  const tr=document.createElement('tr');
+  tr.innerHTML=`
+    <td class="rownum">${tb.children.length+1}</td>
+    <td><input type="date" class="c-date" value="${data.date||todayISO()}"></td>
+    <td><textarea class="c-cust" rows="2" placeholder="ชื่อ / ที่อยู่ / เบอร์">${data.cust||''}</textarea></td>
+    <td class="num"><input type="number" class="c-qty" min="0" step="1" value="${data.qty||''}" oninput="recalc()"></td>
+    <td><input class="c-color" value="${data.color||''}" placeholder="สี"></td>
+    <td><input class="c-size" value="${data.size||''}" placeholder="ขนาด"></td>
+    <td><input class="c-note" value="${data.note||''}" placeholder="เซ็นรับ / หมายเหตุ"></td>
+    <td class="num"><input type="number" class="c-price" min="0" step="0.01" value="${data.price||''}" oninput="recalc()"></td>
+    <td class="num"><input type="number" class="c-paid" min="0" step="0.01" value="${data.paid||''}" oninput="recalc()"></td>
+    <td class="col-del"><button class="btn-del" onclick="delRow(this)" title="ลบแถว">×</button></td>`;
+  tb.appendChild(tr);
+  recalc();
+}
+function delRow(btn){
+  const tb=$('orderBody');
+  if(tb.children.length<=1){ // keep at least 1
+    toast('ต้องมีอย่างน้อย 1 แถว','err');return;
+  }
+  btn.closest('tr').remove();
+  renumber();recalc();
+}
+function renumber(){
+  [...$('orderBody').children].forEach((tr,i)=>tr.querySelector('.rownum').textContent=i+1);
+}
+
+/* ---- Recalculate totals ---- */
+function recalc(){
+  let q=0,p=0,pd=0;
+  [...$('orderBody').children].forEach(tr=>{
+    q+=parseFloat(tr.querySelector('.c-qty').value)||0;
+    p+=parseFloat(tr.querySelector('.c-price').value)||0;
+    pd+=parseFloat(tr.querySelector('.c-paid').value)||0;
+  });
+  $('sumQty').textContent=q;
+  $('sumPrice').textContent=p.toFixed(2);
+  $('sumPaid').textContent=pd.toFixed(2);
+}
+
+/* ---- Collect form data ---- */
+function collect(){
+  const rows=[...$('orderBody').children].map(tr=>({
+    date:tr.querySelector('.c-date').value,
+    cust:tr.querySelector('.c-cust').value.trim(),
+    qty:tr.querySelector('.c-qty').value,
+    color:tr.querySelector('.c-color').value.trim(),
+    size:tr.querySelector('.c-size').value.trim(),
+    note:tr.querySelector('.c-note').value.trim(),
+    price:tr.querySelector('.c-price').value,
+    paid:tr.querySelector('.c-paid').value,
+  }));
+  return {
+    sellerCode:$('sellerCode').value.trim(),
+    sellerName:$('sellerName').value.trim(),
+    shipDate:$('shipDate').value,
+    shipSuffix:$('shipSuffix').value.trim(),
+    rows,
+    savedAt:new Date().toISOString()
+  };
+}
+
+/* ---- Header title text ---- */
+function headerTitle(o){
+  const parts=[];
+  if(o.sellerCode)parts.push(o.sellerCode);
+  if(o.sellerName)parts.push(o.sellerName);
+  let s=parts.join(' ');
+  const ship=[thDate(o.shipDate),o.shipSuffix].filter(Boolean).join(' ');
+  if(ship)s+=`  ขอจัดส่งวันที่ ${ship}`;
+  return s.trim()||'ออเดอร์ผ้าม่าน';
+}
+
+/* ---- Clear ---- */
+function clearForm(){
+  $('sellerCode').value='';$('sellerName').value='';
+  $('shipDate').value='';$('shipSuffix').value='';
+  $('orderBody').innerHTML='';rowCount=0;addRow();
+}
+
+/* ---- Save ---- */
+async function saveOrder(){
+  const o=collect();
+  if(!o.rows.some(r=>r.cust||r.qty||r.price)){toast('กรุณากรอกข้อมูลอย่างน้อย 1 รายการ','err');return;}
+  try{
+    await window.OrderStore.save(o);
+    toast('บันทึกออเดอร์แล้ว','ok');
+    loadSaved();
+  }catch(e){console.error(e);toast('บันทึกไม่สำเร็จ','err');}
+}
+
+/* ---- Build PDF (returns jsPDF doc) ---- */
+function buildPDF(o){
+  const{jsPDF}=window.jspdf;
+  const pdf=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
+  // Thai font: jsPDF core fonts lack Thai glyphs, so we render header+table as image via html2canvas fallback.
+  return pdf;
+}
+
+/* ---- Render printable HTML then rasterize to PDF (keeps Thai text) ---- */
+function renderPrintable(o){
+  const rowsHtml=o.rows.map((r,i)=>`
+    <tr>
+      <td style="text-align:center">${i+1}</td>
+      <td>${thDate(r.date)}</td>
+      <td style="text-align:left">${escapeHtml(r.cust).replace(/\n/g,'<br>')}</td>
+      <td style="text-align:center">${r.qty||''}</td>
+      <td style="text-align:center">${escapeHtml(r.color)}</td>
+      <td style="text-align:center">${escapeHtml(r.size)}</td>
+      <td>${escapeHtml(r.note)}</td>
+      <td style="text-align:right">${r.price?(+r.price).toLocaleString('th-TH',{minimumFractionDigits:2}):''}</td>
+      <td style="text-align:right">${r.paid?(+r.paid).toLocaleString('th-TH',{minimumFractionDigits:2}):''}</td>
+    </tr>`).join('');
+  const sumQty=o.rows.reduce((a,r)=>a+(+r.qty||0),0);
+  const sumP=o.rows.reduce((a,r)=>a+(+r.price||0),0);
+  const sumPd=o.rows.reduce((a,r)=>a+(+r.paid||0),0);
+
+  return `
+  <div style="font-family:'Sarabun',sans-serif;color:#111;padding:24px;width:752px">
+    <div style="font-size:16px;font-weight:700;margin-bottom:12px">${escapeHtml(headerTitle(o))}</div>
+    <table style="border-collapse:collapse;width:100%;font-size:12.5px">
+      <thead>
+        <tr style="background:#0f7b7b;color:#fff">
+          <th style="border:1px solid #333;padding:6px 4px;width:26px">#</th>
+          <th style="border:1px solid #333;padding:6px 4px">วันที่ออเดอร์</th>
+          <th style="border:1px solid #333;padding:6px 4px">ชื่อ–ที่อยู่</th>
+          <th style="border:1px solid #333;padding:6px 4px">จำนวน</th>
+          <th style="border:1px solid #333;padding:6px 4px">สี</th>
+          <th style="border:1px solid #333;padding:6px 4px">ขนาด</th>
+          <th style="border:1px solid #333;padding:6px 4px">เซ็นรับ</th>
+          <th style="border:1px solid #333;padding:6px 4px">ราคา</th>
+          <th style="border:1px solid #333;padding:6px 4px">ชำระ</th>
+        </tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+      <tfoot>
+        <tr style="background:#f0f5f8;font-weight:700">
+          <td colspan="3" style="border:1px solid #333;padding:6px 4px;text-align:center">รวม</td>
+          <td style="border:1px solid #333;padding:6px 4px;text-align:center">${sumQty}</td>
+          <td colspan="3" style="border:1px solid #333"></td>
+          <td style="border:1px solid #333;padding:6px 4px;text-align:right">${sumP.toLocaleString('th-TH',{minimumFractionDigits:2})}</td>
+          <td style="border:1px solid #333;padding:6px 4px;text-align:right">${sumPd.toLocaleString('th-TH',{minimumFractionDigits:2})}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>`;
+}
+function escapeHtml(s){return(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+/* ---- Export PDF (uses html2canvas to preserve Thai) ---- */
+async function exportPDF(o){
+  o=o||collect();
+  if(!o.rows.some(r=>r.cust||r.qty)){toast('ยังไม่มีข้อมูลให้ export','err');return;}
+  toast('กำลังสร้าง PDF…');
+  const area=$('pdfArea');
+  area.innerHTML=renderPrintable(o);
+  await new Promise(r=>setTimeout(r,120));
+  try{
+    const canvas=await html2canvas(area.firstElementChild,{scale:2,backgroundColor:'#fff'});
+    const img=canvas.toDataURL('image/png');
+    const{jsPDF}=window.jspdf;
+    const pdf=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
+    const pw=pdf.internal.pageSize.getWidth()-40;
+    const ph=canvas.height*pw/canvas.width;
+    pdf.addImage(img,'PNG',20,20,pw,ph);
+    const fname=fileName(o);
+    pdf.save(fname);
+    toast('บันทึก PDF แล้ว','ok');
+    return {pdf,fname,blob:pdf.output('blob')};
+  }catch(e){console.error(e);toast('สร้าง PDF ไม่สำเร็จ','err');}
+}
+function fileName(o){
+  const base=[o.sellerCode,o.sellerName].filter(Boolean).join('_')||'order';
+  const d=thDate(o.shipDate)||new Date().toLocaleDateString('th-TH');
+  return `${base}_${d}.pdf`.replace(/[\/\\:\s]+/g,'-');
+}
+
+/* ---- Share to LINE ---- */
+async function shareLine(){
+  const o=collect();
+  if(!o.rows.some(r=>r.cust||r.qty)){toast('ยังไม่มีข้อมูลให้แชร์','err');return;}
+  const res=await exportPDF(o);
+  if(!res)return;
+  // Try native share (mobile) with the PDF file — lets user pick LINE
+  const file=new File([res.blob],res.fname,{type:'application/pdf'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({files:[file],title:headerTitle(o),text:headerTitle(o)});
+      return;
+    }catch(e){/* user cancelled */ return;}
+  }
+  // Desktop fallback: open LINE share with the header text
+  const text=encodeURIComponent(headerTitle(o)+'\n(แนบไฟล์ PDF ที่ดาวน์โหลด)');
+  window.open('https://line.me/R/share?text='+text,'_blank');
+  toast('เปิด LINE — แนบไฟล์ PDF ที่เพิ่งดาวน์โหลด','ok');
+}
+
+/* ---- Saved list ---- */
+async function loadSaved(){
+  try{
+    const list=await window.OrderStore.list();
+    const el=$('savedList');
+    $('savedCount').textContent=list.length?`${list.length} รายการ`:'';
+    if(!list.length){el.innerHTML='<div class="empty">ยังไม่มีออเดอร์ที่บันทึก</div>';return;}
+    el.innerHTML=list.map(o=>{
+      const title=headerTitle(o);
+      const n=(o.rows||[]).length;
+      return `<div class="saved-item">
+        <div class="saved-meta"><strong>${escapeHtml(title)}</strong><br>${n} รายการ · ${new Date(o.savedAt||Date.now()).toLocaleString('th-TH')}</div>
+        <div class="saved-actions">
+          <button class="btn btn-ghost mini" onclick='reopen(${JSON.stringify(JSON.stringify(o))})'>เปิด</button>
+          <button class="btn btn-amber mini" onclick='pdfSaved(${JSON.stringify(JSON.stringify(o))})'>PDF</button>
+          <button class="btn btn-ghost mini" onclick="removeSaved('${o.id}')" style="color:var(--danger)">ลบ</button>
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){console.error(e);}
+}
+function reopen(js){
+  const o=JSON.parse(js);
+  $('sellerCode').value=o.sellerCode||'';
+  $('sellerName').value=o.sellerName||'';
+  $('shipDate').value=o.shipDate||'';
+  $('shipSuffix').value=o.shipSuffix||'';
+  $('orderBody').innerHTML='';rowCount=0;
+  (o.rows||[]).forEach(r=>addRow(r));
+  if(!(o.rows||[]).length)addRow();
+  window.scrollTo({top:0,behavior:'smooth'});
+  toast('เปิดออเดอร์แล้ว','ok');
+}
+function pdfSaved(js){exportPDF(JSON.parse(js));}
+async function removeSaved(id){
+  await window.OrderStore.remove(id);
+  toast('ลบแล้ว','ok');loadSaved();
+}
+
+function closeCfg(){$('cfgModal').classList.remove('show');}
+
+/* ---- Boot ---- */
+function boot(){
+  addRow();
+  loadSaved();
+  if(!window.OrderStore.useFirebase()){
+    // subtle: not forcing modal each load; only show hint via sync indicator
+  }
+}
+window.addEventListener('storeReady',boot);
+// fallback if store already ready
+if(window.OrderStore) boot();
+
+// expose
+window.addRow=addRow;window.delRow=delRow;window.recalc=recalc;
+window.saveOrder=saveOrder;window.exportPDF=exportPDF;window.shareLine=shareLine;
+window.clearForm=clearForm;window.reopen=reopen;window.pdfSaved=pdfSaved;
+window.removeSaved=removeSaved;window.closeCfg=closeCfg;
+</script>
+</body>
+</html>
