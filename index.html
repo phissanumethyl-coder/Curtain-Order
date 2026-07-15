@@ -141,6 +141,61 @@ tfoot .num{text-align:right;color:var(--teal-dark)}
 .btn-amber:hover{background:#cf9012}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 
+/* ---------- Customer cards ---------- */
+#custList{display:flex;flex-direction:column;gap:16px}
+.cust-card{border:1px solid var(--line-strong);border-radius:12px;background:#fff;overflow:hidden}
+.cust-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:11px 14px;background:var(--teal-soft);border-bottom:1px solid var(--line);
+}
+.cust-head .who{display:flex;align-items:center;gap:9px;font-family:'Prompt',sans-serif;font-weight:600;color:var(--teal-dark);font-size:14.5px}
+.cust-head .badge{
+  width:26px;height:26px;border-radius:8px;background:var(--teal);color:#fff;
+  display:grid;place-items:center;font-size:13px;
+}
+.cust-body{padding:14px}
+.cust-fields{display:grid;grid-template-columns:1fr 160px;gap:12px;margin-bottom:14px}
+.cust-fields .f-date{grid-column:2}
+.cust-fields label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:4px}
+
+/* items */
+.items-label{font-size:12.5px;font-weight:600;color:var(--ink-soft);margin:2px 0 8px}
+.item-row{
+  display:grid;grid-template-columns:64px 90px 1fr 1fr 110px 34px;gap:8px;align-items:start;
+  padding:10px;border:1px solid var(--line);border-radius:9px;background:#fbfcfd;margin-bottom:8px;
+}
+.item-row .ic label{display:block;font-size:11px;color:#8a99a8;margin-bottom:3px;font-weight:600}
+.item-row input{padding:8px 9px;font-size:14px}
+.item-row .ic-del{display:flex;align-items:flex-end;height:100%;padding-bottom:2px}
+.item-del{
+  width:30px;height:38px;border:none;border-radius:8px;background:var(--danger-soft);color:var(--danger);
+  cursor:pointer;font-size:17px;display:grid;place-items:center;transition:.12s;
+}
+.item-del:hover{background:var(--danger);color:#fff}
+.cust-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px;flex-wrap:wrap}
+.cust-sub{font-size:13px;color:var(--ink-soft)}
+.cust-sub strong{color:var(--teal-dark);font-family:'Prompt',sans-serif}
+.card-actions{display:flex;gap:8px}
+.btn-remove-cust{background:#fff;border:1px solid var(--line-strong);color:var(--danger);padding:7px 13px;font-size:13px;border-radius:8px;cursor:pointer;font-family:'Prompt',sans-serif}
+.btn-remove-cust:hover{background:var(--danger-soft);border-color:var(--danger)}
+.btn-add-item{background:var(--teal-soft);color:var(--teal-dark);border:none;padding:7px 14px;font-size:13px;border-radius:8px;cursor:pointer;font-family:'Prompt',sans-serif;font-weight:500}
+.btn-add-item:hover{background:#cfeae8}
+
+.grand-total{
+  margin-top:16px;padding:14px 18px;background:var(--teal);color:#fff;border-radius:10px;
+  display:flex;align-items:center;justify-content:space-between;
+  font-family:'Prompt',sans-serif;font-size:15px;
+}
+.grand-total strong{font-size:19px;font-weight:700}
+
+@media(max-width:640px){
+  .cust-fields{grid-template-columns:1fr}
+  .cust-fields .f-date{grid-column:auto}
+  .item-row{grid-template-columns:1fr 1fr;grid-auto-rows:auto}
+  .item-row .ic-del{grid-column:1/-1;justify-content:flex-end}
+  .item-del{width:100%;height:36px}
+}
+
 /* ---------- Action bar ---------- */
 .actionbar{
   position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);
@@ -231,45 +286,21 @@ tfoot .num{text-align:right;color:var(--teal-dark)}
     </div>
   </div>
 
-  <!-- ===== Order table ===== -->
+  <!-- ===== Customer cards ===== -->
   <div class="panel">
     <div class="panel-head">
       <h2>รายการออเดอร์</h2>
-      <span class="hint">กด “เพิ่มแถว” เพื่อเพิ่มรายการ</span>
+      <span class="hint">1 การ์ด = ลูกค้า 1 คน · เพิ่มรายการสินค้าได้หลายผืน</span>
     </div>
     <div class="panel-body">
-      <div class="table-scroll">
-        <table class="order">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>วันที่<br>เปิดออเดอร์</th>
-              <th>ชื่อ–ที่อยู่ลูกค้า</th>
-              <th>จำนวน<br>(ผืน)</th>
-              <th>สี</th>
-              <th>ขนาด</th>
-              <th>หมายเหตุ</th>
-              <th>ต้นทุน</th>
-              <th>ชำระ</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="orderBody"></tbody>
-          <tfoot>
-            <tr>
-              <td colspan="3" class="label">รวม</td>
-              <td class="num" id="sumQty">0</td>
-              <td colspan="3"></td>
-              <td class="num" id="sumPrice">0.00</td>
-              <td></td>
-              <td></td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+      <div id="custList"></div>
       <div class="table-actions">
-        <button class="btn btn-add" onclick="addRow()">＋ เพิ่มแถว</button>
+        <button class="btn btn-primary" onclick="addCustomer()">＋ เพิ่มลูกค้า</button>
         <button class="btn btn-ghost" onclick="clearForm()">ล้างฟอร์ม</button>
+      </div>
+      <div class="grand-total">
+        <span>ยอดต้นทุนรวมทั้งไฟล์</span>
+        <strong id="grandTotal">0.00</strong>
       </div>
     </div>
   </div>
@@ -383,7 +414,6 @@ window.dispatchEvent(new Event('storeReady'));
 <!-- ============ App logic ============ -->
 <script>
 const $=id=>document.getElementById(id);
-let rowCount=0;
 
 /* ---- Toast ---- */
 let toastTimer;
@@ -408,37 +438,6 @@ function thDate(iso){
   return `${+d}/${+m}/${(+y)+543}`; // convert to Buddhist year like sample (2569)
 }
 
-/* ---- Add a row ---- */
-function addRow(data={}){
-  rowCount++;
-  const tb=$('orderBody');
-  const tr=document.createElement('tr');
-  tr.innerHTML=`
-    <td class="rownum">${tb.children.length+1}</td>
-    <td><input type="date" class="c-date" value="${data.date||todayISO()}"></td>
-    <td><textarea class="c-cust" rows="2" placeholder="ชื่อ / ที่อยู่ / เบอร์">${data.cust||''}</textarea></td>
-    <td class="num"><textarea class="c-qty" rows="1" placeholder="จำนวน" oninput="recalc()">${data.qty||''}</textarea></td>
-    <td><textarea class="c-color" rows="1" placeholder="สี">${data.color||''}</textarea></td>
-    <td><textarea class="c-size" rows="1" placeholder="ขนาด">${data.size||''}</textarea></td>
-    <td><textarea class="c-note" rows="1" placeholder="หมายเหตุ">${data.note||''}</textarea></td>
-    <td class="num"><textarea class="c-price" rows="1" placeholder="ต้นทุน" oninput="recalc()">${data.price||''}</textarea></td>
-    <td><textarea class="c-paid" rows="1" placeholder="เช่น COD 1500 / Shopee 1500">${data.paid||''}</textarea></td>
-    <td class="col-del"><button class="btn-del" onclick="delRow(this)" title="ลบแถว">×</button></td>`;
-  tb.appendChild(tr);
-  recalc();
-}
-function delRow(btn){
-  const tb=$('orderBody');
-  if(tb.children.length<=1){ // keep at least 1
-    toast('ต้องมีอย่างน้อย 1 แถว','err');return;
-  }
-  btn.closest('tr').remove();
-  renumber();recalc();
-}
-function renumber(){
-  [...$('orderBody').children].forEach((tr,i)=>tr.querySelector('.rownum').textContent=i+1);
-}
-
 /* ---- Sum every number found in a multi-line text field ---- */
 function sumLines(text){
   return (text||'').split('\n').reduce((a,line)=>{
@@ -447,38 +446,118 @@ function sumLines(text){
   },0);
 }
 
-/* ---- Recalculate totals (qty + cost only; paid is a note, not summed) ---- */
+/* ================= CUSTOMER CARDS ================= */
+let custSeq=0;
+
+function itemRowHTML(it={}){
+  return `<div class="item-row">
+    <div class="ic"><label>จำนวน</label><input class="i-qty" inputmode="numeric" placeholder="1" value="${escapeAttr(it.qty)}" oninput="recalc()"></div>
+    <div class="ic"><label>สี</label><input class="i-color" placeholder="A6" value="${escapeAttr(it.color)}"></div>
+    <div class="ic"><label>ขนาด</label><input class="i-size" placeholder="2.00*2.00" value="${escapeAttr(it.size)}"></div>
+    <div class="ic"><label>หมายเหตุ</label><input class="i-note" placeholder="ตาไก่สีดำ" value="${escapeAttr(it.note)}"></div>
+    <div class="ic"><label>ต้นทุน</label><input class="i-price" inputmode="decimal" placeholder="320.20" value="${escapeAttr(it.price)}" oninput="recalc()"></div>
+    <div class="ic ic-del"><button class="item-del" onclick="delItem(this)" title="ลบรายการ">×</button></div>
+  </div>`;
+}
+
+function addCustomer(data={}){
+  custSeq++;
+  const wrap=document.createElement('div');
+  wrap.className='cust-card';
+  const items=(data.items&&data.items.length)?data.items:[{}];
+  wrap.innerHTML=`
+    <div class="cust-head">
+      <div class="who"><span class="badge cust-badge"></span>ลูกค้า</div>
+      <button class="btn-remove-cust" onclick="delCustomer(this)">ลบลูกค้า</button>
+    </div>
+    <div class="cust-body">
+      <div class="cust-fields">
+        <div>
+          <label>ชื่อ–ที่อยู่ลูกค้า</label>
+          <textarea class="c-cust" rows="3" placeholder="ชื่อ / ที่อยู่ / เบอร์ / เลขคำสั่งซื้อ">${escapeAttr(data.cust)}</textarea>
+        </div>
+        <div class="f-date">
+          <label>วันที่เปิดออเดอร์</label>
+          <input type="date" class="c-date" value="${data.date||todayISO()}">
+          <label style="margin-top:10px">ชำระ</label>
+          <input class="c-paid" placeholder="COD 1500 / Shopee 1500" value="${escapeAttr(data.paid)}">
+        </div>
+      </div>
+      <div class="items-label">รายการสินค้า</div>
+      <div class="items">${items.map(itemRowHTML).join('')}</div>
+      <div class="cust-foot">
+        <div class="cust-sub">รวมต้นทุนลูกค้านี้ <strong class="cust-total">0.00</strong> · <span class="cust-qty">0</span> ผืน</div>
+        <div class="card-actions">
+          <button class="btn-add-item" onclick="addItem(this)">＋ เพิ่มรายการ</button>
+        </div>
+      </div>
+    </div>`;
+  $('custList').appendChild(wrap);
+  renumberCust();
+  recalc();
+}
+
+function addItem(btn){
+  const items=btn.closest('.cust-card').querySelector('.items');
+  items.insertAdjacentHTML('beforeend', itemRowHTML());
+  recalc();
+}
+function delItem(btn){
+  const items=btn.closest('.items');
+  if(items.children.length<=1){toast('ต้องมีอย่างน้อย 1 รายการ','err');return;}
+  btn.closest('.item-row').remove();
+  recalc();
+}
+function delCustomer(btn){
+  const list=$('custList');
+  if(list.children.length<=1){toast('ต้องมีอย่างน้อย 1 ลูกค้า','err');return;}
+  btn.closest('.cust-card').remove();
+  renumberCust();recalc();
+}
+function renumberCust(){
+  [...$('custList').children].forEach((c,i)=>c.querySelector('.cust-badge').textContent=i+1);
+}
+
+/* ---- Recalculate per-customer + grand total (cost only) ---- */
 function recalc(){
-  let q=0,p=0;
-  [...$('orderBody').children].forEach(tr=>{
-    q+=sumLines(tr.querySelector('.c-qty').value);
-    p+=sumLines(tr.querySelector('.c-price').value);
+  let grand=0;
+  [...$('custList').children].forEach(card=>{
+    let cp=0,cq=0;
+    card.querySelectorAll('.item-row').forEach(row=>{
+      cp+=sumLines(row.querySelector('.i-price').value);
+      cq+=sumLines(row.querySelector('.i-qty').value);
+    });
+    grand+=cp;
+    card.querySelector('.cust-total').textContent=cp.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});
+    card.querySelector('.cust-qty').textContent=Number.isInteger(cq)?cq:cq.toFixed(2);
   });
-  $('sumQty').textContent=Number.isInteger(q)?q:q.toFixed(2);
-  $('sumPrice').textContent=p.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});
+  $('grandTotal').textContent=grand.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 
 /* ---- Collect form data ---- */
 function collect(){
-  const rows=[...$('orderBody').children].map(tr=>({
-    date:tr.querySelector('.c-date').value,
-    cust:tr.querySelector('.c-cust').value.trim(),
-    qty:tr.querySelector('.c-qty').value,
-    color:tr.querySelector('.c-color').value.trim(),
-    size:tr.querySelector('.c-size').value.trim(),
-    note:tr.querySelector('.c-note').value.trim(),
-    price:tr.querySelector('.c-price').value,
-    paid:tr.querySelector('.c-paid').value,
+  const customers=[...$('custList').children].map(card=>({
+    date:card.querySelector('.c-date').value,
+    cust:card.querySelector('.c-cust').value.trim(),
+    paid:card.querySelector('.c-paid').value.trim(),
+    items:[...card.querySelectorAll('.item-row')].map(row=>({
+      qty:row.querySelector('.i-qty').value.trim(),
+      color:row.querySelector('.i-color').value.trim(),
+      size:row.querySelector('.i-size').value.trim(),
+      note:row.querySelector('.i-note').value.trim(),
+      price:row.querySelector('.i-price').value.trim(),
+    }))
   }));
   return {
     sellerCode:$('sellerCode').value.trim(),
     sellerName:$('sellerName').value.trim(),
     shipDate:$('shipDate').value,
     shipSuffix:$('shipSuffix').value.trim(),
-    rows,
+    customers,
     savedAt:new Date().toISOString()
   };
 }
+function escapeAttr(s){return(s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 /* ---- Header title text ---- */
 function headerTitle(o){
@@ -495,13 +574,14 @@ function headerTitle(o){
 function clearForm(){
   $('sellerCode').value='';$('sellerName').value='';
   $('shipDate').value='';$('shipSuffix').value='';
-  $('orderBody').innerHTML='';rowCount=0;addRow();
+  $('custList').innerHTML='';custSeq=0;addCustomer();
 }
 
 /* ---- Save ---- */
 async function saveOrder(){
   const o=collect();
-  if(!o.rows.some(r=>r.cust||r.qty||r.price)){toast('กรุณากรอกข้อมูลอย่างน้อย 1 รายการ','err');return;}
+  const hasData=o.customers.some(c=>c.cust||c.items.some(it=>it.qty||it.price||it.size));
+  if(!hasData){toast('กรุณากรอกข้อมูลอย่างน้อย 1 รายการ','err');return;}
   try{
     await window.OrderStore.save(o);
     toast('บันทึกออเดอร์แล้ว','ok');
@@ -509,33 +589,37 @@ async function saveOrder(){
   }catch(e){console.error(e);toast('บันทึกไม่สำเร็จ','err');}
 }
 
-/* ---- Build PDF (returns jsPDF doc) ---- */
-function buildPDF(o){
-  const{jsPDF}=window.jspdf;
-  const pdf=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
-  // Thai font: jsPDF core fonts lack Thai glyphs, so we render header+table as image via html2canvas fallback.
-  return pdf;
-}
-
 /* ---- Render printable HTML then rasterize to PDF (keeps Thai text) ----
-   Word-style: white background, black hairline borders, no # column       */
+   Word-style: white bg, black hairline borders. Customer name/date/paid
+   are merged (rowspan) across that customer's item rows.                   */
 function renderPrintable(o){
   const nl=s=>escapeHtml(s).replace(/\n/g,'<br>');
   const bd='border:1px solid #000;padding:6px 8px;vertical-align:top';
-  const rowsHtml=o.rows.map(r=>`
-    <tr>
-      <td style="${bd};text-align:center;white-space:nowrap">${thDate(r.date)}</td>
-      <td style="${bd};text-align:left">${nl(r.cust)}</td>
-      <td style="${bd};text-align:center">${nl(r.qty)}</td>
-      <td style="${bd};text-align:center">${nl(r.color)}</td>
-      <td style="${bd};text-align:center">${nl(r.size)}</td>
-      <td style="${bd};text-align:center">${nl(r.note)}</td>
-      <td style="${bd};text-align:right">${nl(r.price)}</td>
-      <td style="${bd};text-align:center">${nl(r.paid)}</td>
-    </tr>`).join('');
+  const bdc=bd+';text-align:center';
+  let grand=0;
 
-  // total cost = sum of every number across all cost cells (supports multi-line)
-  const sumP=o.rows.reduce((a,r)=>a+sumLines(r.price),0);
+  const body=(o.customers||[]).map(c=>{
+    const items=c.items&&c.items.length?c.items:[{}];
+    return items.map((it,idx)=>{
+      grand+=sumLines(it.price);
+      const first=idx===0;
+      const span=items.length;
+      const merged = first ? `
+        <td style="${bdc};white-space:nowrap" rowspan="${span}">${thDate(c.date)}</td>
+        <td style="${bd};text-align:left" rowspan="${span}">${nl(c.cust)}</td>` : '';
+      const paidCell = first ? `<td style="${bdc}" rowspan="${span}">${nl(c.paid)}</td>` : '';
+      return `<tr>
+        ${merged}
+        <td style="${bdc}">${nl(it.qty)}</td>
+        <td style="${bdc}">${nl(it.color)}</td>
+        <td style="${bdc}">${nl(it.size)}</td>
+        <td style="${bdc}">${nl(it.note)}</td>
+        <td style="${bd};text-align:right">${nl(it.price)}</td>
+        ${paidCell}
+      </tr>`;
+    }).join('');
+  }).join('');
+
   const th='border:1px solid #000;padding:7px 8px;font-weight:700;text-align:center';
 
   return `
@@ -554,11 +638,11 @@ function renderPrintable(o){
           <th style="${th}">ชำระ</th>
         </tr>
       </thead>
-      <tbody>${rowsHtml}</tbody>
+      <tbody>${body}</tbody>
       <tfoot>
         <tr style="font-weight:700;background:#fff">
           <td colspan="6" style="${bd};text-align:center;font-weight:700">รวม</td>
-          <td style="${bd};text-align:right;font-weight:700">${sumP.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+          <td style="${bd};text-align:right;font-weight:700">${grand.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
           <td style="${bd}"></td>
         </tr>
       </tfoot>
@@ -570,7 +654,8 @@ function escapeHtml(s){return(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt
 /* ---- Export PDF (uses html2canvas to preserve Thai) ---- */
 async function exportPDF(o){
   o=o||collect();
-  if(!o.rows.some(r=>r.cust||r.qty)){toast('ยังไม่มีข้อมูลให้ export','err');return;}
+  const hasData=(o.customers||[]).some(c=>c.cust||c.items.some(it=>it.qty||it.price||it.size));
+  if(!hasData){toast('ยังไม่มีข้อมูลให้ export','err');return;}
   toast('กำลังสร้าง PDF…');
   const area=$('pdfArea');
   area.innerHTML=renderPrintable(o);
@@ -600,7 +685,8 @@ function fileName(o){
 /* ---- Share to LINE ---- */
 async function shareLine(){
   const o=collect();
-  if(!o.rows.some(r=>r.cust||r.qty)){toast('ยังไม่มีข้อมูลให้แชร์','err');return;}
+  const hasData=(o.customers||[]).some(c=>c.cust||c.items.some(it=>it.qty||it.price||it.size));
+  if(!hasData){toast('ยังไม่มีข้อมูลให้แชร์','err');return;}
   const res=await exportPDF(o);
   if(!res)return;
   // Try native share (mobile) with the PDF file — lets user pick LINE
@@ -626,9 +712,9 @@ async function loadSaved(){
     if(!list.length){el.innerHTML='<div class="empty">ยังไม่มีออเดอร์ที่บันทึก</div>';return;}
     el.innerHTML=list.map(o=>{
       const title=headerTitle(o);
-      const n=(o.rows||[]).length;
+      const nCust=(o.customers||o.rows||[]).length;
       return `<div class="saved-item">
-        <div class="saved-meta"><strong>${escapeHtml(title)}</strong><br>${n} รายการ · ${new Date(o.savedAt||Date.now()).toLocaleString('th-TH')}</div>
+        <div class="saved-meta"><strong>${escapeHtml(title)}</strong><br>${nCust} ลูกค้า · ${new Date(o.savedAt||Date.now()).toLocaleString('th-TH')}</div>
         <div class="saved-actions">
           <button class="btn btn-ghost mini" onclick='reopen(${JSON.stringify(JSON.stringify(o))})'>เปิด</button>
           <button class="btn btn-amber mini" onclick='pdfSaved(${JSON.stringify(JSON.stringify(o))})'>PDF</button>
@@ -638,19 +724,28 @@ async function loadSaved(){
     }).join('');
   }catch(e){console.error(e);}
 }
+// convert legacy row-based order -> customer-based
+function normalizeOrder(o){
+  if(o.customers)return o;
+  const customers=(o.rows||[]).map(r=>({
+    date:r.date,cust:r.cust,paid:r.paid,
+    items:[{qty:r.qty,color:r.color,size:r.size,note:r.note,price:r.price}]
+  }));
+  return {...o,customers};
+}
 function reopen(js){
-  const o=JSON.parse(js);
+  const o=normalizeOrder(JSON.parse(js));
   $('sellerCode').value=o.sellerCode||'';
   $('sellerName').value=o.sellerName||'';
   $('shipDate').value=o.shipDate||'';
   $('shipSuffix').value=o.shipSuffix||'';
-  $('orderBody').innerHTML='';rowCount=0;
-  (o.rows||[]).forEach(r=>addRow(r));
-  if(!(o.rows||[]).length)addRow();
+  $('custList').innerHTML='';custSeq=0;
+  (o.customers||[]).forEach(c=>addCustomer(c));
+  if(!(o.customers||[]).length)addCustomer();
   window.scrollTo({top:0,behavior:'smooth'});
   toast('เปิดออเดอร์แล้ว','ok');
 }
-function pdfSaved(js){exportPDF(JSON.parse(js));}
+function pdfSaved(js){exportPDF(normalizeOrder(JSON.parse(js)));}
 async function removeSaved(id){
   await window.OrderStore.remove(id);
   toast('ลบแล้ว','ok');loadSaved();
@@ -659,19 +754,35 @@ async function removeSaved(id){
 function closeCfg(){$('cfgModal').classList.remove('show');}
 
 /* ---- Boot ---- */
+let _booted=false;
 function boot(){
-  addRow();
+  if(_booted)return; _booted=true;
+  addCustomer();
   loadSaved();
-  if(!window.OrderStore.useFirebase()){
-    // subtle: not forcing modal each load; only show hint via sync indicator
-  }
 }
 window.addEventListener('storeReady',boot);
-// fallback if store already ready
 if(window.OrderStore) boot();
 
+// Safety net: if the Firebase module fails to load (offline / CDN blocked),
+// storeReady never fires — after a short wait, boot with a local-only store.
+setTimeout(()=>{
+  if(_booted)return;
+  const LS='curtain_orders';
+  window.OrderStore={
+    useFirebase:()=>false,
+    async save(o){const l=JSON.parse(localStorage.getItem(LS)||'[]');l.unshift({...o,id:'local_'+Date.now()});localStorage.setItem(LS,JSON.stringify(l));},
+    async list(){return JSON.parse(localStorage.getItem(LS)||'[]');},
+    async remove(id){let l=JSON.parse(localStorage.getItem(LS)||'[]');l=l.filter(o=>o.id!==id);localStorage.setItem(LS,JSON.stringify(l));}
+  };
+  const dot=$('syncDot'),txt=$('syncText');
+  if(dot){dot.className='dot off';}
+  if(txt){txt.textContent='บันทึกในเครื่อง (local)';}
+  boot();
+},2500);
+
 // expose
-window.addRow=addRow;window.delRow=delRow;window.recalc=recalc;
+window.addCustomer=addCustomer;window.delCustomer=delCustomer;
+window.addItem=addItem;window.delItem=delItem;window.recalc=recalc;
 window.saveOrder=saveOrder;window.exportPDF=exportPDF;window.shareLine=shareLine;
 window.clearForm=clearForm;window.reopen=reopen;window.pdfSaved=pdfSaved;
 window.removeSaved=removeSaved;window.closeCfg=closeCfg;
