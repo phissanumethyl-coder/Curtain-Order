@@ -594,7 +594,7 @@ async function saveOrder(){
    are merged (rowspan) across that customer's item rows.                   */
 function renderPrintable(o){
   const nl=s=>escapeHtml(s).replace(/\n/g,'<br>');
-  const bd='border:1px solid #000;padding:6px 8px;vertical-align:top';
+  const bd='border:1px solid #000;padding:6px 8px;vertical-align:top;word-break:break-word;overflow-wrap:break-word';
   const bdc=bd+';text-align:center';
   let grand=0;
 
@@ -605,7 +605,7 @@ function renderPrintable(o){
       const first=idx===0;
       const span=items.length;
       const merged = first ? `
-        <td style="${bdc};white-space:nowrap" rowspan="${span}">${thDate(c.date)}</td>
+        <td style="${bdc}" rowspan="${span}">${thDate(c.date)}</td>
         <td style="${bd};text-align:left" rowspan="${span}">${nl(c.cust)}</td>` : '';
       const paidCell = first ? `<td style="${bdc}" rowspan="${span}">${nl(c.paid)}</td>` : '';
       return `<tr>
@@ -625,10 +625,20 @@ function renderPrintable(o){
   return `
   <div style="font-family:'Sarabun',sans-serif;color:#000;background:#fff;padding:28px;width:748px">
     <div style="font-size:16px;font-weight:700;margin-bottom:14px">${escapeHtml(headerTitle(o))}</div>
-    <table style="border-collapse:collapse;width:100%;font-size:12.5px;background:#fff">
+    <table style="border-collapse:collapse;width:100%;font-size:12.5px;background:#fff;table-layout:fixed">
+      <colgroup>
+        <col style="width:78px">
+        <col style="width:28%">
+        <col style="width:52px">
+        <col style="width:44px">
+        <col style="width:70px">
+        <col style="width:88px">
+        <col style="width:66px">
+        <col style="width:70px">
+      </colgroup>
       <thead>
         <tr style="background:#fff">
-          <th style="${th}">วันที่ออเดอร์</th>
+          <th style="${th};white-space:nowrap">วันที่ออเดอร์</th>
           <th style="${th}">ชื่อ–ที่อยู่</th>
           <th style="${th}">จำนวน</th>
           <th style="${th}">สี</th>
@@ -689,18 +699,17 @@ async function shareLine(){
   if(!hasData){toast('ยังไม่มีข้อมูลให้แชร์','err');return;}
   const res=await exportPDF(o);
   if(!res)return;
-  // Try native share (mobile) with the PDF file — lets user pick LINE
+  // Try native share (mobile) with ONLY the PDF file — no title/text
   const file=new File([res.blob],res.fname,{type:'application/pdf'});
   if(navigator.canShare&&navigator.canShare({files:[file]})){
     try{
-      await navigator.share({files:[file],title:headerTitle(o),text:headerTitle(o)});
+      await navigator.share({files:[file]});
       return;
     }catch(e){/* user cancelled */ return;}
   }
-  // Desktop fallback: open LINE share with the header text
-  const text=encodeURIComponent(headerTitle(o)+'\n(แนบไฟล์ PDF ที่ดาวน์โหลด)');
-  window.open('https://line.me/R/share?text='+text,'_blank');
-  toast('เปิด LINE — แนบไฟล์ PDF ที่เพิ่งดาวน์โหลด','ok');
+  // Desktop fallback: browsers can't attach files to LINE automatically,
+  // so the PDF is downloaded — user attaches it into the LINE group manually.
+  toast('ดาวน์โหลด PDF แล้ว — แนบไฟล์เข้ากลุ่ม LINE ได้เลย','ok');
 }
 
 /* ---- Saved list ---- */
